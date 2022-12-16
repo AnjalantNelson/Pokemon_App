@@ -3,12 +3,14 @@ const express = require('express')
 const app = express();
 const mongoose = require('mongoose')
 const port = 3000
-const pokemon = require('./models/pokemon')
+const Pokemon = require('./models/pokemon')
+const methodOverride = require('method-override')
 
 //middleware
 app.set('view engine', 'jsx');
 app.engine('jsx', require('express-react-views').createEngine());
 app.use(express.urlencoded({extended:false}))
+app.use(methodOverride('_method'))
 
 //connect to mongoose / remove depreciation
 mongoose.set('strictQuery', true);
@@ -20,47 +22,66 @@ mongoose.connection.once('open', ()=>{
   console.log('connected to mongo');
 })
 
-
 //////////This is where routes go/////////////
 
-//index
-app.get('/pokemon', (req, res) => {
-    //find all pokemon
-    pokemon.find({}, (error, allPokemon) => {
-        res.render('pokemon/Index', {
-            pokemon: allPokemon
-        })
-    })
-})
+// INDEX ROUTING //
+app.get("/", (req, res) => {
+    //find all fruits
+    Pokemon.find({}, (error, allPokemon)=>{
+      res.render('Index', {
+        Pokemon: allPokemon
+      })
+    }) 
+  });
 
+// NEW ROUTING //
+app.get("/New", (req, res) => {
+    res.render('New')
+});
 
-//new route
-app.get('/pokemon/new', (req, res) => {
-    res.render('pokemon/new')
-})
-
-//Post
+// POST ROUTING //
 app.post('/pokemon', (req, res) => {
-    if(req.body.readyToEvolve === "on") {
-        req.body.readyToEvolve = true
-    } else {
-        req.body.readyToEvolve = false
-    }
-    pokemon.create(req.body, (error, createdPokemon) => {
-        res.redirect('/pokemon')
-    })
+    Pokemon.create(req.body, (error, createdPokemon) => {
+        res.redirect("/");
+    });
 })
 
-//Show route
-app.get('/pokemon/:id', (req, res) => {
-    pokemon.findById(req.params.id, (err, foundPokemon) => {
+// SHOW ROUTING //
+app.get( '/pokemon/:id', (req, res) => {
+    Pokemon.findById(req.params.id, (err, foundPokemon) => {
         res.render('pokemon/Show', {
-            pokemon : findPokemon
+            pokemon: foundPokemon
+        })
+    })
+});
+
+// EDITING ROUTING //
+app.get('/pokemon/:id/Edit', (req, res)=> {
+    // finding pokemon by ID
+    // render an edit form
+    // pass in the pokemon data "payload"
+    Pokemon.findById(req.params.id, (err, foundPokemon) => {
+        res.render('pokemon/Edit', {
+            pokemon: foundPokemon
         })
     })
 })
+// UPDATE ROUTING //
+app.put('/pokemon/:id', (req, res) => {
+    // find the pokemon by ID and update
+    // redirect to the pokemon's show page
+    Pokemon.findByIdAndUpdate(req.params.id, req.body, (err, updatedPokemon) => {
+        console.log(updatedPokemon)
+        res.redirect(`/pokemon/${req.params.id}`)
+    })
+})
 
-
+// DELETE ROUTING //
+app.delete('/pokemon/:id', (req, res)=>{
+    Pokemon.findByIdAndRemove(req.params.id, (err, deletedPokemon) => {
+        res.redirect('/')
+    })
+});
 
 
 
